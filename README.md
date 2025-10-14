@@ -1,6 +1,8 @@
 ### Instructions
-Clone this with:
+Clone this with:\
 git clone https://github.com/takhogan/RoboticsGroupAssignment1.git
+Or preferably use ssh if you have it setup:\
+git clone git@github.com:takhogan/RoboticsGroupAssignment1.git
 
 ### Objectives
 - Visualize the robot in RVIZ.
