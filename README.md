@@ -25,5 +25,5 @@ git clone https://github.com/takhogan/RoboticsGroupAssignment1.git
 - Create a launch file that
   1. Based on parameters, launches a Gazebo or RVIZ world
   2. Creates the robot in the world - ros_gz_sim create
-  3. Launches ros/teleop to gazebo message bridge 
+  3. setup ros/teleop to gazebo message bridge 
   4. Launches the PID controller
