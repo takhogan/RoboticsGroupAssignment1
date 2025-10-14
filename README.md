@@ -1,6 +1,6 @@
 ### Instructions
 Clone this with:\
-git clone https://github.com/takhogan/RoboticsGroupAssignment1.git\
+git clone https://github.com/takhogan/RoboticsGroupAssignment1.git \
 Or preferably use ssh if you have it setup:\
 git clone git@github.com:takhogan/RoboticsGroupAssignment1.git
 
