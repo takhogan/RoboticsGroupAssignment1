@@ -106,8 +106,9 @@ class DiffDrivePID(Node):
 
         self._timer: Timer = self.create_timer(self._dt, self._control_loop)
 
-        self._from_frame: str = 'chassis'
-        self._to_frame: str = 'odom'
+        self._from_frame: str = 'basic_robot'
+        self._to_frame: str = 'default'
+        self.get_logger().info('DiffDrivePID initialized!')
 
         # Extra DEBUG stuff left in -- just in case you are curious how pid was tuned.
         # self._pid_debug_pub: Publisher = self.create_publisher(Float64MultiArray, 'pid_debug', 10)

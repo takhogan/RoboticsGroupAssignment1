@@ -27,6 +27,7 @@
   <exec_depend>teleop_twist_keyboard</exec_depend>
 
   <depend>en613_gazebo</depend>
+  <depend>en613_control</depend>
   <depend>en613_description</depend>
 
   <test_depend>ament_copyright</test_depend>

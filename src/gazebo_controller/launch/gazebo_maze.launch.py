@@ -61,7 +61,7 @@ def generate_launch_description():
         description='Whether to launch teleop node.')        
     use_pid_controller_arg = DeclareLaunchArgument(
         'use_pid_controller',
-        default_value=TextSubstitution(text='false'),
+        default_value=TextSubstitution(text='true'),
         description='Whether to launch PID controller node.')
 
     use_sim_time = LaunchConfiguration('use_sim_time')
@@ -72,11 +72,10 @@ def generate_launch_description():
     urdf_model = LaunchConfiguration("urdf_model")
 
     # --- 3. GLOBAL PARAMETER (REQUIRED FOR SIMULATION TIME SYNC) ---
-    set_sim_time = SetParameter(name='use_sim_time', value=use_sim_time)
+    # set_sim_time = SetParameter(name='use_sim_time', value=use_sim_time)
 
     robot_description_content: ParameterValue = ParameterValue(Command([
-        'xacro', ' ', urdf_model, ' ',
-        'parent:=empty ',
+        'xacro', ' ', urdf_model, ' '
     ]), value_type=str)
 
     # --- 4. GAZEBO LAUNCH ---
@@ -106,7 +105,14 @@ def generate_launch_description():
         output="screen",
         arguments=["-topic", 'robot_description', '-name', 'basic_robot', '-x', '0', '-y', '0', '-z', '0.4']
     )
-    
+
+    static_tf_publisher = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        arguments=['0', '0', '0', '0', '0', '0', 'basic_robot', 'chassis'],
+        output='screen'
+    )
+
     # --- 7. ROBOT STATE PUBLISHER (For RViz to read the robot model) ---
     robot_state_publisher = Node(
         package='robot_state_publisher',
@@ -153,27 +159,28 @@ def generate_launch_description():
     start_gz_bridge_cmd: Node = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
-        parameters=[{'qos_overrides./model/basic_robot.subscriber.reliability': 'reliable'}],
+        parameters=[
+            {
+                'use_sim_time': use_sim_time,
+                'qos_overrides./model/basic_robot.subscriber.reliability': 'reliable',
+                'qos_overrides./tf.publisher.durability': 'transient_local',
+                'qos_overrides./tf_static.publisher.durability': 'transient_local',
+            }
+        ],
         arguments=['/cmd_vel@geometry_msgs/msg/Twist@gz.msgs.Twist',
                    '/odom@nav_msgs/msg/Odometry@gz.msgs.Odometry',
                    '/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V',
+                   '/model/basic_robot/pose@tf2_msgs/msg/TFMessage@gz.msgs.Pose_V',
+                   '/model/basic_robot/pose_static@tf2_msgs/msg/TFMessage@gz.msgs.Pose_V',
                    '/joint_states@sensor_msgs/msg/JointState@gz.msgs.Model',
                      ],
+        remappings=[
+            ('/model/basic_robot/pose', '/tf'),
+            ('/model/basic_robot/pose_static', '/tf_static'),
+        ],
         output='screen'
     )
 
-    # --- 10. EVENT HANDLER: Wait for robot to spawn before starting other nodes ---
-    start_delayed_nodes = RegisterEventHandler(
-        event_handler=OnProcessExit(
-            target_action=gz_spawn_entity_cmd,
-            on_exit=[
-                pid_controller_node,
-                teleop_node,
-                start_rviz_cmd
-            ]
-        )
-    )
-    
     return LaunchDescription([
         declare_rviz_config_cmd,
         declare_use_rviz_cmd,
@@ -181,10 +188,12 @@ def generate_launch_description():
         use_sim_time_arg,
         use_teleop_arg, 
         use_pid_controller_arg, 
-        set_sim_time,
         gazebo_launch,
         robot_state_publisher,
         gz_spawn_entity_cmd,
+        teleop_node,
+        start_rviz_cmd,
+        pid_controller_node,
         start_gz_bridge_cmd,
-        start_delayed_nodes
+        static_tf_publisher
     ])
