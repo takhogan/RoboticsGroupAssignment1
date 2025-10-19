@@ -1,107 +1,190 @@
-import os
-from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument, RegisterEventHandler
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch_ros.actions import Node
-from launch.substitutions import LaunchConfiguration, Command, TextSubstitution
+from launch_ros.actions import Node, SetParameter
+from launch.substitutions import LaunchConfiguration, TextSubstitution, PathJoinSubstitution, Command
+from launch.event_handlers import OnProcessExit
+from launch.conditions import IfCondition
+from launch_ros.substitutions import FindPackageShare
+from launch_ros.parameter_descriptions import ParameterValue
+from numpy import pi
 
 def generate_launch_description():
+    urdf_package = "en613_description"
+    urdf_filename = "basic_robot.urdf.xacro"
+    rviz_config_filename = "basic_robot.rviz"
 
-    package_name = 'gazebo_controller'
+    project_gz_package_name: str = "en613_gazebo"
+    gz_package_name: str = "ros_gz_sim"
+    gz_launch_filename: str = "gz_sim.launch.py"
 
-    # 1. Paths
-    pkg_gazebo_ros = get_package_share_directory('gazebo_ros')
-    pkg_share = get_package_share_directory(package_name)
-    
-    world_file_path = os.path.join(pkg_share, 'worlds', 'maze.world') 
-    
-    robot_sdf_file = 'diff_drive_robot.sdf'
-    robot_description_content = os.path.join(
-        get_package_share_directory(package_name), 
-        'models', 
-        'diff_drive_robot', 
-        robot_sdf_file
+    pkg_share_description = FindPackageShare(urdf_package)
+    urdf_path = PathJoinSubstitution(
+        [pkg_share_description, "urdf", urdf_filename]
     )
-    
-    with open(robot_description_content, 'r') as infp:
-        robot_desc = infp.read()
+    default_rviz_path = PathJoinSubstitution(
+        [pkg_share_description, "rviz", rviz_config_filename]
+    )
+    project_gz_path: FindPackageShare = FindPackageShare(project_gz_package_name)
+    project_world_directory: PathJoinSubstitution = PathJoinSubstitution(
+        [project_gz_path, "worlds"]
+    )
+    gz_path: FindPackageShare = FindPackageShare(gz_package_name)
+    gz_launch_path: PathJoinSubstitution = PathJoinSubstitution(
+        [gz_path, "launch", gz_launch_filename]
+    )
 
-    robot_sdf_path = os.path.join(pkg_share, 'models', 'diff_drive_robot', 'diff_drive_robot.sdf') 
-    rviz_config_path = os.path.join(pkg_share, 'rviz', 'config.rviz')
-    
-    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
+    # --- 2. LAUNCH ARGUMENTS ---
+    declare_rviz_config_cmd = DeclareLaunchArgument(
+        "rviz_config_file",
+        default_value=default_rviz_path,
+        description="Path to RViz config file",
+    )
+    declare_use_rviz_cmd = DeclareLaunchArgument(
+        "use_rviz",
+        default_value="true",
+        choices=["true", "false"],
+        description="Launch RViz with the robot description",
+    )
+    declare_urdf_model_cmd = DeclareLaunchArgument(
+        "urdf_model",
+        default_value=urdf_path,
+        description="Path to the URDF model file",
+    )
+    use_sim_time_arg = DeclareLaunchArgument(
+        'use_sim_time',
+        default_value='true',
+        description='Use simulation (Gazebo) clock if true')
+    use_teleop_arg = DeclareLaunchArgument(
+        'use_teleop',
+        default_value=TextSubstitution(text='false'),
+        description='Whether to launch teleop node.')        
+    use_pid_controller_arg = DeclareLaunchArgument(
+        'use_pid_controller',
+        default_value=TextSubstitution(text='false'),
+        description='Whether to launch PID controller node.')
 
-    # Start Gazebo server and client
-    gazebo = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(pkg_gazebo_ros, 'launch', 'gazebo.launch.py')
-        ),
+    use_sim_time = LaunchConfiguration('use_sim_time')
+    use_teleop = LaunchConfiguration('use_teleop')
+    use_pid_controller = LaunchConfiguration('use_pid_controller')
+    rviz_config_file = LaunchConfiguration("rviz_config_file")
+    use_rviz = LaunchConfiguration("use_rviz")
+    urdf_model = LaunchConfiguration("urdf_model")
+
+    # --- 3. GLOBAL PARAMETER (REQUIRED FOR SIMULATION TIME SYNC) ---
+    set_sim_time = SetParameter(name='use_sim_time', value=use_sim_time)
+
+    robot_description_content: ParameterValue = ParameterValue(Command([
+        'xacro', ' ', urdf_model, ' ',
+        'parent:=empty ',
+    ]), value_type=str)
+
+    # --- 4. GAZEBO LAUNCH ---
+    gazebo_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(gz_launch_path),
         launch_arguments={
-            'world': '"' + world_file_path + '"',
-            'use_sim_time': use_sim_time
-        }.items()
+            'gz_args': [
+                TextSubstitution(text='-r -v 4 '),
+                PathJoinSubstitution([
+                    project_world_directory, 'maze.world'
+                ]),
+            ]
+        }.items(),
     )
 
-    # Spawn the robot entity in Gazebo (using the SDF file directly)
-    spawn_entity = Node(
-        package='gazebo_ros',
-        executable='spawn_entity.py',
-        arguments=[
-            '-entity', 'diff_drive_robot', 
-            '-file', '"' + robot_sdf_path + '"',
-            '-x', '0.0', 
-            '-y', '0.0',
-            '-z', '0.1',
-        ],
-        output='screen'
+    robot_description_content: ParameterValue = ParameterValue(Command([
+        'xacro', ' ', urdf_model, ' ',
+    ]), value_type=str)
+
+    robot_description = {'robot_description': robot_description_content,
+                         'use_sim_time': True}
+    
+    # --- 5. ROBOT SPAWN ---
+    gz_spawn_entity_cmd: Node = Node(
+        package="ros_gz_sim",
+        executable="create",
+        output="screen",
+        arguments=["-topic", 'robot_description', '-name', 'basic_robot', '-x', '0', '-y', '0', '-z', '0.4']
     )
     
-    '''
-    # Start the PID Controller node
-    # Executable name matches 'pid_controller_node' from setup.py
-    pid_controller_node = Node(
-        package=package_name,
-        executable='pid_controller_node', 
-        name='pid_controller',
-        output='screen',
-        parameters=[{'use_sim_time': use_sim_time}]
-    )
-    '''
-
-    # Use the 'robot_state_publisher' to load the robot model (by passing the SDF file)
+    # --- 7. ROBOT STATE PUBLISHER (For RViz to read the robot model) ---
     robot_state_publisher = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
         name='robot_state_publisher',
         output='screen',
-        parameters=[
-            {
-                'robot_description': robot_desc,
-                'use_sim_time': use_sim_time
-            }
-        ]
+        parameters=[robot_description])
+    
+    # --- 8. PID CONTROLLER NODE ---
+    pid_controller_node = Node(
+        package='gazebo_controller',
+        executable='pid_controller',
+        name='pid_controller',
+        output='screen',
+        parameters=[{
+            'kp': 8.0,
+            'kd': 0.03,
+            'max_linear_velocity': 3.0,
+            'max_angular_velocity': pi,
+            'position_tolerance': 1e-3}],
+        condition=IfCondition(use_pid_controller)
     )
-
-    # Start RViz2
-    rviz_node = Node(
+    
+    # --- 8b. TELEOP NODE ---
+    teleop_node = Node(
+        package='teleop_twist_keyboard',
+        executable='teleop_twist_keyboard', 
+        name='teleop_keyboard',
+        output='screen',
+        prefix='xterm -e', 
+        condition=IfCondition(use_teleop)
+    )
+    
+    # --- 9. RViz2 NODE ---
+    start_rviz_cmd: Node = Node(
+        condition=IfCondition(use_rviz),
         package='rviz2',
         executable='rviz2',
         name='rviz2',
-        arguments=['-d', rviz_config_path],
         output='screen',
-        parameters=[{'use_sim_time': use_sim_time}]
+        arguments=['-d', rviz_config_file]
+    )
+
+    start_gz_bridge_cmd: Node = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        parameters=[{'qos_overrides./model/basic_robot.subscriber.reliability': 'reliable'}],
+        arguments=['/cmd_vel@geometry_msgs/msg/Twist@gz.msgs.Twist',
+                   '/odom@nav_msgs/msg/Odometry@gz.msgs.Odometry',
+                   '/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V',
+                   '/joint_states@sensor_msgs/msg/JointState@gz.msgs.Model',
+                     ],
+        output='screen'
+    )
+
+    # --- 10. EVENT HANDLER: Wait for robot to spawn before starting other nodes ---
+    start_delayed_nodes = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=gz_spawn_entity_cmd,
+            on_exit=[
+                pid_controller_node,
+                teleop_node,
+                start_rviz_cmd
+            ]
+        )
     )
     
     return LaunchDescription([
-        DeclareLaunchArgument(
-            'use_sim_time',
-            default_value='true',
-            description='Use simulation (Gazebo) clock if true'),
-        
-        gazebo,
-        spawn_entity,
-        # pid_controller_node,
+        declare_rviz_config_cmd,
+        declare_use_rviz_cmd,
+        declare_urdf_model_cmd,
+        use_sim_time_arg,
+        use_teleop_arg, 
+        use_pid_controller_arg, 
+        set_sim_time,
+        gazebo_launch,
         robot_state_publisher,
-        rviz_node
+        gz_spawn_entity_cmd,
+        start_gz_bridge_cmd,
+        start_delayed_nodes
     ])
