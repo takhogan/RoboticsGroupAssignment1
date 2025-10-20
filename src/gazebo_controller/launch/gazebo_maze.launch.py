@@ -128,9 +128,10 @@ def generate_launch_description():
         name='pid_controller',
         output='screen',
         parameters=[{
-            'kp': 8.0,
-            'kd': 0.03,
-            'max_linear_velocity': 3.0,
+            'kp': 0.75,
+            'ki': 0.0001,
+            'kd': 0.08,
+            'max_linear_velocity': 5.0,
             'max_angular_velocity': pi,
             'position_tolerance': 1e-3}],
         condition=IfCondition(use_pid_controller)

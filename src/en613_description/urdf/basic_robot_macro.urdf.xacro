@@ -29,7 +29,7 @@
             </visual>
 
             <inertial>
-                <origin xyz="0 0 0" rpy="0 0 0"/>
+                <origin xyz="0 0 -0.25" rpy="0 0 0"/>
                 <mass value="15.0"/>
                 <inertia ixx="0.8578125" ixy="0.0" ixz="0.0" iyy="0.8578125" iyz="0.0" izz="1.7015625" />
             </inertial>
@@ -42,16 +42,10 @@
                 <surface>
                     <friction>
                         <ode>
-                            <mu>0.5</mu>
-                            <mu2>0.5</mu2>
+                            <mu>0.8</mu>
+                            <mu2>0.8</mu2>
                         </ode>
                     </friction>
-                    <contact>
-                        <ode>
-                            <kp>1e6</kp>
-                            <kd>100</kd>
-                        </ode>
-                    </contact>
                 </surface>
             </collision>
         </link>
@@ -79,11 +73,8 @@
                 <surface>
                     <friction>
                         <ode>
-                            <mu>1</mu>
-                            <mu2>1</mu2>
-                            <slip1>0.035</slip1>
-                            <slip2>0</slip2>
-                            <fdir1>0 0 1</fdir1>
+                            <mu>1.2</mu>
+                            <mu2>1.2</mu2>
                         </ode>
                     </friction>
                 </surface>
@@ -113,11 +104,8 @@
                 <surface>
                     <friction>
                         <ode>
-                            <mu>1</mu>
-                            <mu2>1</mu2>
-                            <slip1>0.035</slip1>
-                            <slip2>0</slip2>
-                            <fdir1>0 0 1</fdir1>
+                            <mu>1.2</mu>
+                            <mu2>1.2</mu2>
                         </ode>
                     </friction>
                 </surface>
@@ -135,8 +123,14 @@
 
             <inertial>
                 <origin xyz="0 0 0" rpy="0 0 0"/>
-                <mass value="0.01"/>
-                <inertia ixx="3.90625e-05" ixy="0.0" ixz="0.0" iyy="3.90625e-05" iyz="0.0" izz="3.90625e-05" />
+                <mass value="0.002"/>
+                <inertia 
+                    ixx="7.8125e-07" 
+                    ixy="0.0" 
+                    ixz="0.0" 
+                    iyy="7.8125e-07" 
+                    iyz="0.0" 
+                    izz="7.8125e-07"/>
             </inertial>
 
             <collision>
@@ -151,8 +145,8 @@
             <parent link="chassis"/>
             <child link="left_wheel"/>
             <axis xyz="0 1 0"/>
-            <limit effort="100" velocity="10.0"/>
-            <dynamics damping="0.1" friction="0.1"/>
+            <limit effort="100" velocity="5.0"/>
+            <dynamics damping="0.5" friction="0.2"/>
         </joint>
 
         <joint name="right_wheel_joint" type="continuous">
@@ -160,8 +154,8 @@
             <parent link="chassis"/>
             <child link="right_wheel"/>
             <axis xyz="0 1 0"/>
-            <limit effort="100" velocity="10.0"/>
-            <dynamics damping="0.1" friction="0.1"/>
+            <limit effort="100" velocity="5.0"/>
+            <dynamics damping="0.5" friction="0.2"/>
         </joint>
 
         <joint name="lidar_joint" type="fixed">

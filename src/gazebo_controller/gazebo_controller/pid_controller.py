@@ -11,6 +11,7 @@ from rclpy.time import Time
 from rclpy.duration import Duration
 from geometry_msgs.msg import Twist, PoseStamped, Quaternion
 from tf2_ros import TransformListener, Buffer, LookupException, TransformStamped
+from std_msgs.msg import Float64MultiArray
 
 __author__ = "Jacob Taylor Cassady"
 __email__ = "jcassad1@jh.edu"
@@ -80,19 +81,21 @@ class DiffDrivePID(Node):
         self._dt: float = 1. / frequency
         # Declare parameters with default values
         self.declare_parameter('kp', 8.0)
+        self.declare_parameter('ki', 0.0)
         self.declare_parameter('kd', 0.03)
         self.declare_parameter('max_linear_velocity', 1.0)
         self.declare_parameter('max_angular_velocity', pi)
         self.declare_parameter('position_tolerance', 0.005)
         
         self._kp: float = self.get_parameter('kp').get_parameter_value().double_value
+        self._ki: float = self.get_parameter('ki').get_parameter_value().double_value
         self._kd: float = self.get_parameter('kd').get_parameter_value().double_value
         self._max_linear_velocity: float = self.get_parameter('max_linear_velocity').get_parameter_value().double_value
         self._max_angular_velocity: float = self.get_parameter('max_angular_velocity').get_parameter_value().double_value
         self._position_tolerance: float = self.get_parameter('position_tolerance').get_parameter_value().double_value
          
-        self._last_x, self._last_y = 0.0, 0.0
         self._last_error = zeros(2)
+        self._integral_error = zeros(2)
         self._tf_buffer: Buffer = Buffer()
         self._tf_listener: TransformListener = TransformListener(self._tf_buffer, self)
         self._goal_pose: Optional[PoseStamped] = None
@@ -106,29 +109,37 @@ class DiffDrivePID(Node):
 
         self._timer: Timer = self.create_timer(self._dt, self._control_loop)
 
-        self._from_frame: str = 'basic_robot'
-        self._to_frame: str = 'default'
+        self._from_frame: str = 'chassis'
+        self._to_frame: str = 'odom'
         self.get_logger().info('DiffDrivePID initialized!')
 
         # Extra DEBUG stuff left in -- just in case you are curious how pid was tuned.
-        # self._pid_debug_pub: Publisher = self.create_publisher(Float64MultiArray, 'pid_debug', 10)
-        # self._csv_file = open("pid_log.csv", "w", newline="")
-        # self._csv_writer = writer(self._csv_file)
-        # self._csv_writer.writerow([
-        #     "time", "x", "y", "gx", "gy", 
-        #     "error_x", "error_y", 
-        #     "v_f", "omega"
-        # ])
+        self._pid_debug_pub: Publisher = self.create_publisher(Float64MultiArray, 'pid_debug', 10)
+        self._csv_file = open("pid_log.csv", "w", newline="")
+        self._csv_writer = writer(self._csv_file)
+        self._csv_writer.writerow([
+            "time", "x", "y", "gx", "gy", 
+            "error_x", "error_y", 
+            "v_f", "omega"
+        ])
 
     def _goal_pose_callback(self, msg: PoseStamped) -> None:
         self._goal_pose = msg
         self._goal_time = self.get_clock().now()
+        self._integral_error[:] = 0.0
 
     def _compute_control(self, x, y, yaw, gx, gy) -> Tuple[float, float]:
         e: ndarray = array([gx - x, gy - y])
+        self._integral_error += e * self._dt
+
+        integral_limit: float = 1.0
+        self._integral_error[0] = max(min(self._integral_error[0], integral_limit), -integral_limit)
+        self._integral_error[1] = max(min(self._integral_error[1], integral_limit), -integral_limit)
+        
         derivative: ndarray = (e - self._last_error) / self._dt
 
         u: float = self._kp * e \
+            + self._ki * self._integral_error \
             + self._kd * derivative
 
         R: ndarray = array([[cos(yaw), sin(yaw)],
@@ -140,7 +151,6 @@ class DiffDrivePID(Node):
 
         omega: float = u_robot[1]
 
-        self._last_x, self._last_y = x, y
         self._last_error = e
         return v_f, omega
 
@@ -178,6 +188,8 @@ class DiffDrivePID(Node):
 
         if norm([gx - x, gy - y]) < self._position_tolerance:
             v_f, omega = 0.0, 0.0
+            self._integral_error[:] = 0.0
+            self._last_error[:] = 0.0
         else:
             v_f = max(min(v_f, self._max_linear_velocity), -self._max_linear_velocity)
             omega = max(min(omega, self._max_angular_velocity), -self._max_angular_velocity)
@@ -189,11 +201,11 @@ class DiffDrivePID(Node):
         self._cmd_vel_pub.publish(cmd_vel)
 
         # # Publish PID debug info
-        # debug_msg = Float64MultiArray()
-        # debug_msg.data = [x, y, gx, gy, err_x, err_y, v_f, omega]
-        # self._pid_debug_pub.publish(debug_msg)
-        # self._csv_writer.writerow([self.get_clock().now().to_msg().sec + self.get_clock().now().to_msg().nanosec * 1e-9,
-        #                            x, y, gx, gy, err_x, err_y, v_f, omega])
+        debug_msg = Float64MultiArray()
+        debug_msg.data = [x, y, gx, gy, gx-x, gy-y, v_f, omega]
+        self._pid_debug_pub.publish(debug_msg)
+        self._csv_writer.writerow([self.get_clock().now().to_msg().sec + self.get_clock().now().to_msg().nanosec * 1e-9,
+                                   x, y, gx, gy, gx-x, gy-y, v_f, omega])
 
 
 def main(args=None):

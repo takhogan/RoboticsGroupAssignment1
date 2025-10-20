@@ -1,5 +1,5 @@
 <sdf version="1.7">
-  <world name="default">
+  <world name="odom">
     <plugin
         filename="gz-sim-physics-system"
         name="gz::sim::systems::Physics">
@@ -23,6 +23,14 @@
               <size>100 100</size>
             </plane>
           </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>0.1</mu>   <!-- lateral friction -->
+                <mu2>0.1</mu2> <!-- secondary friction -->
+              </ode>
+            </friction>
+          </surface>
         </collision>
         <visual name="visual">
           <geometry>
