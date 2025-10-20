@@ -1,0 +1,26 @@
+<?xml version="1.0" ?>
+
+<robot name="basic_robot"  xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <!-- Import diff macro -->
+    <xacro:include filename="$(find en613_description)/urdf/basic_robot_macro.urdf.xacro"/>
+
+    <xacro:arg name="use_gazebo" default="true"/>
+
+    <xacro:if value="$(arg use_gazebo)">
+        <xacro:include filename="$(find en613_description)/urdf/basic_robot.gazebo.xacro"/>
+        <xacro:basic_robot_gazebo />
+    </xacro:if>
+
+    <xacro:unless value="$(arg use_gazebo)">
+        <link name="odom" />
+
+        <joint name="odom_to_chassis" type="fixed">
+            <origin xyz="0 0 0.4" rpy="0 0 0"/>
+            <parent link="odom"/>
+            <child link="chassis"/>
+        </joint>
+    </xacro:unless>
+
+    <xacro:basic_robot />
+
+</robot>

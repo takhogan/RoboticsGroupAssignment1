@@ -1,0 +1,47 @@
+<?xml version="1.0"?> 
+
+<robot xmlns:xacro="http://ros.org/wiki/xacro"> 
+  <xacro:macro name="basic_robot_gazebo" params=""> 
+  
+    <gazebo> 
+      <plugin filename="gz-sim-diff-drive-system" 
+        name="gz::sim::systems::DiffDrive"> 
+      
+        <left_joint>left_wheel_joint</left_joint> 
+        <right_joint>right_wheel_joint</right_joint> 
+        <topic>/cmd_vel</topic>
+        <odom_topic>/odom</odom_topic>
+        <tf_topic>/basic_robot/tf</tf_topic>
+        <wheel_separation>0.825</wheel_separation> 
+        <wheel_radius>0.4</wheel_radius> 
+        <odom_publish_frequency>50</odom_publish_frequency> 
+        <frame_id>odom</frame_id>
+        <child_frame_id>chassis</child_frame_id>
+
+        <max_linear_velocity>2.0</max_linear_velocity> 
+        <max_angular_velocity>6.28</max_angular_velocity> 
+      </plugin> 
+
+      <plugin
+        filename="gz-sim-joint-state-publisher-system"
+        name="gz::sim::systems::JointStatePublisher">
+        <topic>/joint_states</topic>
+      </plugin>
+
+      <plugin
+        filename="gz-sim-pose-publisher-system"
+        name="gz::sim::systems::PosePublisher">
+        <publish_model_pose>true</publish_model_pose>
+        <publish_link_pose>true</publish_link_pose>
+        <publish_nested_model_pose>true</publish_nested_model_pose>
+        <use_pose_vector_msg>true</use_pose_vector_msg>
+        <update_frequency>30</update_frequency>
+        <static_publisher>true</static_publisher>
+        <static_update_frequency>30</static_update_frequency>
+      </plugin>
+
+
+    </gazebo> 
+
+  </xacro:macro> 
+</robot>

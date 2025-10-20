@@ -1,0 +1,204 @@
+<sdf version='1.11'>
+  <model name='basic_robot'>
+    <link name='chassis'>
+      <inertial>
+        <pose>3.9994667377682967e-05 0 -0.24996333822157049 0 0 0</pose>
+        <mass>15.002000000000001</mass>
+        <inertia>
+          <ixx>0.8579645110860219</ixx>
+          <ixy>0</ixy>
+          <ixz>-0.00016497800293294231</ixz>
+          <iyy>0.85814448708922153</iyy>
+          <iyz>0</iyz>
+          <izz>1.7017432572532001</izz>
+        </inertia>
+      </inertial>
+      <collision name='chassis_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.82499999999999996 0.82499999999999996 0.074999999999999997</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name='chassis_fixed_joint_lump__lidar_dome_collision_1'>
+        <pose>0.29999999999999999 0 0.025000000000000001 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.03125</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name='chassis_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.82499999999999996 0.82499999999999996 0.074999999999999997</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.25 0.25 0.3125 1</diffuse>
+          <ambient>0.25 0.25 0.3125 1</ambient>
+        </material>
+      </visual>
+      <visual name='chassis_fixed_joint_lump__lidar_dome_visual_1'>
+        <pose>0.29999999999999999 0 0.025000000000000001 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.03125</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>0.25 1 0.25 1</diffuse>
+          <ambient>0.25 1 0.25 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='left_wheel_joint' type='revolute'>
+      <pose relative_to='chassis'>0 0.4375 0 0 0 0</pose>
+      <parent>chassis</parent>
+      <child>left_wheel</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <effort>100</effort>
+          <velocity>5</velocity>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+        </limit>
+        <dynamics>
+          <damping>0.5</damping>
+          <friction>0.20000000000000001</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='left_wheel'>
+      <pose relative_to='left_wheel_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>2</mass>
+        <inertia>
+          <ixx>0.080416699999999994</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.080416699999999994</iyy>
+          <iyz>0</iyz>
+          <izz>0.16</izz>
+        </inertia>
+      </inertial>
+      <collision name='left_wheel_collision'>
+        <pose>0 0 0 1.5707949999999999 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.050000000000000003</length>
+            <radius>0.40000000000000002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='left_wheel_visual'>
+        <pose>0 0 0 1.5707949999999999 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.050000000000000003</length>
+            <radius>0.40000000000000002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>0 0.625 1 1</diffuse>
+          <ambient>0 0.625 1 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='right_wheel_joint' type='revolute'>
+      <pose relative_to='chassis'>0 -0.4375 0 0 0 0</pose>
+      <parent>chassis</parent>
+      <child>right_wheel</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <effort>100</effort>
+          <velocity>5</velocity>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+        </limit>
+        <dynamics>
+          <damping>0.5</damping>
+          <friction>0.20000000000000001</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='right_wheel'>
+      <pose relative_to='right_wheel_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>2</mass>
+        <inertia>
+          <ixx>0.080416699999999994</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.080416699999999994</iyy>
+          <iyz>0</iyz>
+          <izz>0.16</izz>
+        </inertia>
+      </inertial>
+      <collision name='right_wheel_collision'>
+        <pose>0 0 0 1.5707949999999999 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.050000000000000003</length>
+            <radius>0.40000000000000002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='right_wheel_visual'>
+        <pose>0 0 0 1.5707949999999999 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.050000000000000003</length>
+            <radius>0.40000000000000002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0 0.25 1</diffuse>
+          <ambient>1 0 0.25 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <plugin name='gz::sim::systems::DiffDrive' filename='gz-sim-diff-drive-system'>
+      <left_joint>left_wheel_joint</left_joint>
+      <right_joint>right_wheel_joint</right_joint>
+      <topic>/cmd_vel</topic>
+      <odom_topic>/odom</odom_topic>
+      <tf_topic>/basic_robot/tf</tf_topic>
+      <wheel_separation>0.825</wheel_separation>
+      <wheel_radius>0.4</wheel_radius>
+      <odom_publish_frequency>50</odom_publish_frequency>
+      <frame_id>odom</frame_id>
+      <child_frame_id>chassis</child_frame_id>
+      <max_linear_velocity>2.0</max_linear_velocity>
+      <max_angular_velocity>6.28</max_angular_velocity>
+    </plugin>
+    <plugin name='gz::sim::systems::JointStatePublisher' filename='gz-sim-joint-state-publisher-system'>
+      <topic>/joint_states</topic>
+    </plugin>
+    <plugin name='gz::sim::systems::PosePublisher' filename='gz-sim-pose-publisher-system'>
+      <publish_model_pose>true</publish_model_pose>
+      <publish_link_pose>true</publish_link_pose>
+      <publish_nested_model_pose>true</publish_nested_model_pose>
+      <use_pose_vector_msg>true</use_pose_vector_msg>
+      <update_frequency>30</update_frequency>
+      <static_publisher>true</static_publisher>
+      <static_update_frequency>30</static_update_frequency>
+    </plugin>
+    <frame name='lidar_joint' attached_to='chassis'>
+      <pose>0.29999999999999999 0 0.025000000000000001 0 0 0</pose>
+    </frame>
+    <frame name='lidar_dome' attached_to='lidar_joint'>
+      <pose>0 0 0 0 0 0</pose>
+    </frame>
+  </model>
+</sdf>
